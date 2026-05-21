@@ -1,0 +1,79 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: leanstock-production-postgres
+    environment:
+      POSTGRES_DB: leanstock_final
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5434:5432"
+    volumes:
+      - leanstock_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d leanstock_final"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+    container_name: leanstock-production-redis
+    ports:
+      - "6380:6379"
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: leanstock-production-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/leanstock_final?schema=public
+      REDIS_URL: redis://redis:6379
+      PORT: 3000
+      BACKEND_PORT: 3000
+      FRONTEND_URL: http://localhost:5174
+      CORS_ORIGINS: http://localhost:5174,http://localhost:3001
+    ports:
+      - "3001:3000"
+    command: sh -c "npx prisma generate && npx prisma migrate deploy && node src/server.js"
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: leanstock-production-worker
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/leanstock_final?schema=public
+      REDIS_URL: redis://redis:6379
+    command: sh -c "npx prisma generate && node src/workers/index.js"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: leanstock-production-frontend
+    depends_on:
+      - backend
+    environment:
+      VITE_API_URL: http://localhost:3001/api/v1
+    ports:
+      - "5174:5173"
+    command: npm run dev -- --host 0.0.0.0
+
+volumes:
+  leanstock_pg:

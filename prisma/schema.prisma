@@ -1,0 +1,335 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum UserRole {
+  PLATFORM_ADMIN
+  OWNER
+  MANAGER
+  CASHIER
+  INVENTORY_CLERK
+}
+
+enum UserStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  DISABLED
+}
+
+enum ProductStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum LocationStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum MovementType {
+  RECEIVE
+  TRANSFER_OUT
+  TRANSFER_IN
+  SALE
+  ADJUSTMENT
+  RESERVATION_RELEASE
+}
+
+enum ReservationStatus {
+  ACTIVE
+  CONFIRMED
+  CANCELLED
+  EXPIRED
+}
+
+enum SaleStatus {
+  COMPLETED
+  REFUNDED
+}
+
+enum PriceChangeReason {
+  MANUAL
+  DEAD_STOCK_DECAY
+}
+
+model Tenant {
+  id          String       @id @default(uuid())
+  name        String
+  status      TenantStatus @default(ACTIVE)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  users        User[]
+  products     Product[]
+  suppliers    Supplier[]
+  locations    Location[]
+  stocks       InventoryStock[]
+  movements    InventoryMovement[]
+  reservations Reservation[]
+  sales        Sale[]
+  priceHistory PriceHistory[]
+  auditLogs    AuditLog[]
+}
+
+model User {
+  id                  String     @id @default(uuid())
+  tenantId            String?
+  email               String     @unique
+  fullName            String
+  passwordHash        String
+  role                UserRole
+  status              UserStatus @default(PENDING_VERIFICATION)
+  emailVerifiedAt     DateTime?
+  verificationCode    String?
+  verificationExpires DateTime?
+  resetCode           String?
+  resetExpires        DateTime?
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+
+  tenant        Tenant?        @relation(fields: [tenantId], references: [id])
+  refreshTokens RefreshToken[]
+  sales         Sale[]
+  auditLogs     AuditLog[]
+
+  @@index([tenantId, role])
+  @@index([tenantId, status])
+}
+
+model RefreshToken {
+  id          String   @id @default(uuid())
+  userId      String
+  tokenHash   String
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Supplier {
+  id        String   @id @default(uuid())
+  tenantId  String
+  name      String
+  phone     String?
+  email     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  products  Product[]
+
+  @@index([tenantId, name])
+}
+
+model Product {
+  id            String        @id @default(uuid())
+  tenantId      String
+  supplierId    String?
+  sku           String
+  name          String
+  category      String?
+  costPrice     Decimal       @db.Decimal(12, 2)
+  sellingPrice  Decimal       @db.Decimal(12, 2)
+  minimumPrice  Decimal       @db.Decimal(12, 2)
+  leadTimeDays  Int           @default(7)
+  safetyStock   Int           @default(5)
+  status        ProductStatus @default(ACTIVE)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  archivedAt    DateTime?
+
+  tenant           Tenant            @relation(fields: [tenantId], references: [id])
+  supplier         Supplier?         @relation(fields: [supplierId], references: [id])
+  stocks           InventoryStock[]
+  movements        InventoryMovement[]
+  reservationItems ReservationItem[]
+  saleItems        SaleItem[]
+  priceHistory     PriceHistory[]
+
+  @@unique([tenantId, sku])
+  @@index([tenantId, name])
+  @@index([tenantId, category])
+  @@index([tenantId, status])
+}
+
+model Location {
+  id        String         @id @default(uuid())
+  tenantId  String
+  name      String
+  address   String?
+  status    LocationStatus @default(ACTIVE)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  tenant       Tenant              @relation(fields: [tenantId], references: [id])
+  stocks       InventoryStock[]
+  movements    InventoryMovement[]
+  reservations Reservation[]
+  sales        Sale[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId, status])
+}
+
+model InventoryStock {
+  id               String   @id @default(uuid())
+  tenantId         String
+  productId        String
+  locationId       String
+  quantityOnHand   Int      @default(0)
+  reservedQuantity Int      @default(0)
+  oldestReceivedAt DateTime?
+  lastSaleAt       DateTime?
+  lastDiscountAt   DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
+  product  Product  @relation(fields: [productId], references: [id])
+  location Location @relation(fields: [locationId], references: [id])
+
+  @@unique([tenantId, productId, locationId])
+  @@index([tenantId, locationId, productId])
+  @@index([tenantId, productId])
+  @@index([tenantId, oldestReceivedAt])
+}
+
+model InventoryMovement {
+  id             String       @id @default(uuid())
+  tenantId       String
+  productId      String
+  locationId     String
+  type           MovementType
+  quantityChange Int
+  quantityAfter  Int
+  note           String?
+  createdById    String?
+  createdAt      DateTime     @default(now())
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
+  product  Product  @relation(fields: [productId], references: [id])
+  location Location @relation(fields: [locationId], references: [id])
+
+  @@index([tenantId, productId, createdAt])
+  @@index([tenantId, locationId, createdAt])
+  @@index([tenantId, type, createdAt])
+}
+
+model Reservation {
+  id         String            @id @default(uuid())
+  tenantId   String
+  locationId String
+  cashierId  String
+  status     ReservationStatus @default(ACTIVE)
+  expiresAt  DateTime
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  tenant   Tenant            @relation(fields: [tenantId], references: [id])
+  location Location          @relation(fields: [locationId], references: [id])
+  items    ReservationItem[]
+  sale     Sale?
+
+  @@index([tenantId, locationId, status])
+  @@index([status, expiresAt])
+}
+
+model ReservationItem {
+  id            String      @id @default(uuid())
+  reservationId String
+  productId     String
+  quantity      Int
+  priceSnapshot Decimal     @db.Decimal(12, 2)
+
+  reservation Reservation @relation(fields: [reservationId], references: [id])
+  product     Product     @relation(fields: [productId], references: [id])
+
+  @@index([reservationId])
+  @@index([productId])
+}
+
+model Sale {
+  id            String     @id @default(uuid())
+  tenantId      String
+  locationId    String
+  cashierId     String
+  reservationId String?    @unique
+  totalAmount   Decimal    @db.Decimal(12, 2)
+  status        SaleStatus @default(COMPLETED)
+  createdAt     DateTime   @default(now())
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id])
+  location    Location     @relation(fields: [locationId], references: [id])
+  cashier     User         @relation(fields: [cashierId], references: [id])
+  reservation Reservation? @relation(fields: [reservationId], references: [id])
+  items       SaleItem[]
+
+  @@index([tenantId, locationId, createdAt])
+  @@index([tenantId, cashierId, createdAt])
+}
+
+model SaleItem {
+  id         String  @id @default(uuid())
+  saleId     String
+  productId  String
+  quantity   Int
+  unitPrice  Decimal @db.Decimal(12, 2)
+  totalPrice Decimal @db.Decimal(12, 2)
+
+  sale    Sale    @relation(fields: [saleId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([saleId])
+  @@index([productId])
+}
+
+model PriceHistory {
+  id          String            @id @default(uuid())
+  tenantId    String
+  productId   String
+  oldPrice    Decimal           @db.Decimal(12, 2)
+  newPrice    Decimal           @db.Decimal(12, 2)
+  reason      PriceChangeReason
+  changedById String?
+  createdAt   DateTime          @default(now())
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([tenantId, productId, createdAt])
+  @@index([tenantId, reason, createdAt])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  tenantId   String?
+  actorId    String?
+  action     String
+  entityType String
+  entityId   String?
+  oldValue   Json?
+  newValue   Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id])
+  actor  User?   @relation(fields: [actorId], references: [id])
+
+  @@index([tenantId, createdAt])
+  @@index([actorId, createdAt])
+  @@index([entityType, entityId])
+}

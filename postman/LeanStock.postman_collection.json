@@ -1,0 +1,85 @@
+{
+  "info": {
+    "name": "LeanStock Final API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Register Owner",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/auth/register-owner"
+      }
+    },
+    {
+      "name": "Verify Email",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/auth/verify-email"
+      }
+    },
+    {
+      "name": "Login",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/auth/login"
+      }
+    },
+    {
+      "name": "Refresh",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/auth/refresh"
+      }
+    },
+    {
+      "name": "Create Product",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/products"
+      }
+    },
+    {
+      "name": "Create Location",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/locations"
+      }
+    },
+    {
+      "name": "Receive Stock",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/inventory/receive"
+      }
+    },
+    {
+      "name": "Transfer Stock",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/transfers"
+      }
+    },
+    {
+      "name": "Create Reservation",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/reservations"
+      }
+    },
+    {
+      "name": "Confirm Sale",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/sales/confirm"
+      }
+    },
+    {
+      "name": "Run Dead Stock Job",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/jobs/dead-stock/run"
+      }
+    }
+  ]
+}

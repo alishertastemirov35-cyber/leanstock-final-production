@@ -1,0 +1,29 @@
+[x] GitHub repository contains backend and frontend
+[x] docker-compose.yml boots backend + frontend + PostgreSQL + Redis + worker
+[x] Backend is Express.js
+[x] ORM is Prisma
+[x] Database is PostgreSQL 15+
+[x] Redis is actively used
+[x] BullMQ worker is included
+[x] JWT authentication exists
+[x] Refresh token logic exists
+[x] RBAC middleware exists
+[x] Multi-tenancy is implemented through tenantId
+[x] Swagger UI is available at /docs
+[x] openapi.yaml exists
+[x] Frontend folder exists
+[x] Frontend consumes backend API
+[x] Product workflow exists
+[x] Location workflow exists
+[x] Inventory receive workflow exists
+[x] Transfer workflow exists
+[x] Reservation workflow exists
+[x] Sales workflow exists
+[x] Dead stock worker exists
+[x] Forecasting endpoint exists
+[x] Tests folder exists
+[x] No raw SQL queries in app code
+[ ] Deployed URL added to DEPLOYED_URL.txt
+[ ] Video link added to VIDEO_LINK.txt
+[ ] Real email provider configured in production
+[ ] Postman collection updated with final deployed URL
