@@ -4,7 +4,8 @@ info:
   version: 1.0.0
   description: Complete API contract for LeanStock backend.
 servers:
-  - url: http://localhost:3000/api/v1
+   - url: https://leanstock-final-production.onrender.com/api/v1
+   - url: http://localhost:3000/api/v1
 security:
   - bearerAuth: []
 tags:
