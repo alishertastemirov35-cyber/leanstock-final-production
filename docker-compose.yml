@@ -43,7 +43,7 @@ services:
       CORS_ORIGINS: http://localhost:5174,http://localhost:3001
     ports:
       - "3001:3000"
-    command: sh -c "npx prisma generate && npx prisma migrate deploy && node src/server.js"
+    command: sh -c "npx prisma generate && npx prisma db push && node src/server.js"
 
   worker:
     build:

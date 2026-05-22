@@ -8,18 +8,27 @@ const schema = z.object({
   PORT: z.coerce.number().default(3000),
   APP_BASE_URL: z.string().url().default('http://localhost:3000'),
   FRONTEND_URL: z.string().url().default('http://localhost:5173'),
+
   DATABASE_URL: z.string().min(10),
   REDIS_URL: z.string().min(5),
+
   JWT_ACCESS_SECRET: z.string().min(16),
   JWT_REFRESH_SECRET: z.string().min(16),
   JWT_ACCESS_EXPIRES_IN: z.string().default('15m'),
   JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
+
   BCRYPT_SALT_ROUNDS: z.coerce.number().min(10).max(14).default(12),
+
+  EMAIL_PROVIDER: z.string().default('console'),
+  EMAIL_API_KEY: z.string().optional(),
+  EMAIL_FROM_ADDRESS: z.string().default('onboarding@resend.dev'),
+
   EMAIL_FROM: z.string().default('LeanStock <no-reply@leanstock.local>'),
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().optional(),
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
+
   AUTH_RATE_LIMIT_PER_MINUTE: z.coerce.number().default(5),
   PUBLIC_RATE_LIMIT_PER_MINUTE: z.coerce.number().default(80),
   RESERVATION_TTL_SECONDS: z.coerce.number().default(600),

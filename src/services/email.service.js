@@ -1,39 +1,31 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const env = require('../config/env');
 
-function createTransporter() {
-  if (!env.SMTP_HOST || !env.SMTP_USER || !env.SMTP_PASS) {
-    return null;
-  }
-
-  return nodemailer.createTransport({
-    host: env.SMTP_HOST,
-    port: env.SMTP_PORT || 587,
-    secure: false,
-    auth: {
-      user: env.SMTP_USER,
-      pass: env.SMTP_PASS
-    }
-  });
-}
-
 async function sendEmail({ to, subject, html }) {
-  const transporter = createTransporter();
+  if (env.EMAIL_PROVIDER === 'resend') {
+    const resend = new Resend(env.EMAIL_API_KEY);
 
-  if (!transporter) {
-    console.log('EMAIL MOCK');
-    console.log('To:', to);
-    console.log('Subject:', subject);
-    console.log('HTML:', html);
-    return { mocked: true };
+    const { data, error } = await resend.emails.send({
+      from: env.EMAIL_FROM_ADDRESS,
+      to,
+      subject,
+      html
+    });
+
+    if (error) {
+      throw new Error(error.message || 'Resend email failed');
+    }
+
+    console.log('REAL EMAIL SENT:', data);
+    return data;
   }
 
-  return transporter.sendMail({
-    from: env.EMAIL_FROM,
-    to,
-    subject,
-    html
-  });
+  console.log('EMAIL MOCK');
+  console.log('To:', to);
+  console.log('Subject:', subject);
+  console.log('HTML:', html);
+
+  return { mocked: true };
 }
 
 module.exports = { sendEmail };

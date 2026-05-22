@@ -6,3 +6,5 @@ PASTE_DEPLOYED_BACKEND_URL_HERE
 
 Swagger URL:
 PASTE_DEPLOYED_BACKEND_URL_HERE/docs
+
+https://leanstock-final-production.onrender.com/docs
